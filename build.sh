@@ -17,7 +17,7 @@ DTBO="${KERNEL_PATH}/dtbo.img"
 DATE="$(TZ=Asia/Jakarta date +%Y%m%d%H%M)"
 
 # Set kernel name
-KERNEL_NAME="derivativeRK-${DATE}.zip"
+KERNEL_NAME="derivativeSK-${DATE}.zip"
 
 function KERNEL_COMPILE() {
 	# Set environment variables
@@ -55,7 +55,7 @@ function KERNEL_RESULT() {
 
 	# Create anykernel
 	rm -rf anykernel
-	git clone https://github.com/kylieeXD/AK3-Surya.git -b R anykernel
+	git clone https://github.com/kylieeXD/AK3-Surya.git -b S anykernel
 
 	# Copying image
 	cp "$DTB" "anykernel/kernels/"
