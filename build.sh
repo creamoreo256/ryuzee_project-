@@ -20,8 +20,8 @@ DATE="$(TZ=Asia/Jakarta date +%Y%m%d%H%M)"
 DEFCONFIG="arch/arm64/configs/surya_defconfig"
 
 # Set kernel name
-KERNEL_NAME1="derivativeTK-${DATE}.zip"
-KERNEL_NAME2="derivativeSK-${DATE}.zip"
+KERNEL_NAME1="rethinkingTK-${DATE}.zip"
+KERNEL_NAME2="rethinkingSK-${DATE}.zip"
 
 function KERNEL_COMPILE() {
 	# Set environment variables
