@@ -54,19 +54,27 @@ jobs:
         chmod +x build.sh
         ./build.sh
 
+    # ==============================
+    # Pack kernel zip (FIXED NAME)
+    # ==============================
     - name: Pack kernel zip
       run: |
         OUT=out/arch/arm64/boot
         AK=AnyKernel3
 
+        BUILD_DATE=$(date +%Y%m%d)
+        BUILD_TIME=$(date +%H%M)
+        ZIP_NAME="UranusKernel-surya-${BUILD_DATE}-${BUILD_TIME}.zip"
+
         cp ${OUT}/Image.gz ${AK}/Image.gz
         cp ${OUT}/dtb.img ${AK}/dtb.img
         [ -f ${OUT}/dtbo.img ] && cp ${OUT}/dtbo.img ${AK}/dtbo.img
 
-        ZIP_NAME="UranusKernel-${GITHUB_RUN_NUMBER}.zip"
         cd ${AK}
         zip -r9 ../${ZIP_NAME} *
         cd ..
+
+        echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
