@@ -8,16 +8,25 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+    # ==============================
+    # Checkout
+    # ==============================
     - name: Checkout source
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
+    # ==============================
+    # Timezone
+    # ==============================
     - name: Set Timezone
       run: |
         sudo timedatectl set-timezone Asia/Jakarta
         echo "TZ=Asia/Jakarta" >> $GITHUB_ENV
 
+    # ==============================
+    # Dependencies
+    # ==============================
     - name: Install build deps
       run: |
         sudo apt update
@@ -39,7 +48,7 @@ jobs:
         key: aosp-clang-13289611-${{ runner.os }}
 
     # ==============================
-    # Get AOSP Clang (UPSTREAM)
+    # Get AOSP Clang
     # ==============================
     - name: Get AOSP Clang
       run: |
@@ -49,13 +58,16 @@ jobs:
           tar -xf clang-13289611-linux-x86.tar.xz --strip-components=1 -C clang
         fi
 
+    # ==============================
+    # Build Kernel
+    # ==============================
     - name: Build kernel
       run: |
         chmod +x build.sh
         ./build.sh
 
     # ==============================
-    # Pack kernel zip (FIXED NAME)
+    # Pack Kernel ZIP
     # ==============================
     - name: Pack kernel zip
       run: |
@@ -76,6 +88,38 @@ jobs:
 
         echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
 
+    # ==============================
+    # Upload to Telegram (AUTO)
+    # ==============================
+    - name: Upload to Telegram
+      if: success()
+      run: |
+        ZIP="${ZIP_NAME}"
+
+        CAPTION=$(cat <<EOF
+🔥 *UranusKernel Build Success*
+
+📱 *Device* : surya
+📦 *File*   : ${ZIP}
+📅 *Date*   : $(date +"%d %B %Y")
+⏰ *Time*   : $(date +"%H:%M WIB")
+🔧 *Clang*  : AOSP 13289611
+⚙️ *CI*     : GitHub Actions
+👤 *Builder*: ryuzee
+
+#UranusKernel #surya #kernel
+EOF
+)
+
+        curl -X POST "https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendDocument" \
+          -F chat_id="${{ secrets.TG_CHAT_ID }}" \
+          -F document=@"${ZIP}" \
+          -F parse_mode=Markdown \
+          -F caption="${CAPTION}"
+
+    # ==============================
+    # Artifact (Optional)
+    # ==============================
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
