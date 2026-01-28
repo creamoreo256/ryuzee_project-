@@ -1,0 +1,37 @@
+name: Manual Upload to Telegram
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "GitHub Actions Run ID (build yang mau diupload)"
+        required: true
+
+jobs:
+  upload:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Download artifact from build
+      uses: actions/download-artifact@v4
+      with:
+        name: UranusKernel-surya
+        path: artifacts
+        run-id: ${{ github.event.inputs.run_id }}
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload to Telegram
+      run: |
+        cd artifacts
+        ZIP=$(ls *.zip | head -n 1)
+
+        CAPTION="🚀 UranusKernel Build
+📱 Device: surya
+📅 Date: $(date +'%Y-%m-%d %H:%M WIB')
+🔧 Clang: AOSP 13289611
+📦 File: ${ZIP}"
+
+        curl -X POST "https://api.telegram.org/bot${{ secrets.TG_BOT_TOKEN }}/sendDocument" \
+          -F chat_id="${{ secrets.TG_CHAT_ID }}" \
+          -F document=@"${ZIP}" \
+          -F caption="${CAPTION}"
