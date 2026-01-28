@@ -37,25 +37,27 @@ jobs:
           binutils-arm-linux-gnueabi
 
     # ==============================
-    # Cache Proton Clang (PERSISTENT)
+    # Cache AOSP Clang (PERSISTENT)
     # ==============================
-    - name: Cache Proton Clang
+    - name: Cache AOSP Clang
       uses: actions/cache@v4
       with:
         path: clang
-        key: proton-clang-${{ runner.os }}
+        key: aosp-clang-13289611-${{ runner.os }}
         restore-keys: |
-          proton-clang-
+          aosp-clang-13289611-
 
     # ==============================
-    # Get Proton Clang
+    # Get AOSP Clang
     # ==============================
     - name: Get Clang
       run: |
         if [ ! -d clang ]; then
-          git clone --depth=1 https://github.com/kdrag0n/proton-clang clang
+          mkdir clang
+          wget https://github.com/Impqxr/aosp_clang_ci/releases/download/13289611/clang-13289611-linux-x86.tar.xz -O clang.tar.xz
+          tar -xf clang.tar.xz --strip-components=1 -C clang
         else
-          echo "Using cached Proton Clang"
+          echo "Using cached AOSP Clang"
         fi
 
     # ==============================
