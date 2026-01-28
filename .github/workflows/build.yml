@@ -71,7 +71,7 @@ jobs:
       if: success()
       run: |
         chmod +x up.sh
-        up.sh \
+        ./up.sh \
           "${ZIP_NAME}" \
           "${{ secrets.TG_BOT_TOKEN }}" \
           "${{ secrets.TG_CHAT_ID }}"
