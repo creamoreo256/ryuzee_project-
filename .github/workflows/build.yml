@@ -8,108 +8,68 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-    # ==============================
-    # Checkout
-    # ==============================
     - name: Checkout source
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
-    # ==============================
-    # Timezone (BUILD TIME ONLY)
-    # ==============================
     - name: Set Timezone
       run: |
         sudo timedatectl set-timezone Asia/Jakarta
         echo "TZ=Asia/Jakarta" >> $GITHUB_ENV
 
-    # ==============================
-    # Install build deps (ARM32 FIX)
-    # ==============================
     - name: Install build deps
       run: |
         sudo apt update
         sudo apt install -y \
           bc bison build-essential ccache flex \
           libssl-dev libelf-dev lld git wget unzip zip \
+          gcc-aarch64-linux-gnu \
           gcc-arm-linux-gnueabi \
+          binutils-aarch64-linux-gnu \
           binutils-arm-linux-gnueabi
 
     # ==============================
-    # Cache AOSP Clang (PERSISTENT)
+    # Cache AOSP Clang
     # ==============================
     - name: Cache AOSP Clang
       uses: actions/cache@v4
       with:
         path: clang
         key: aosp-clang-13289611-${{ runner.os }}
-        restore-keys: |
-          aosp-clang-13289611-
 
     # ==============================
-    # Get AOSP Clang
+    # Get AOSP Clang (UPSTREAM)
     # ==============================
-    - name: Get Clang
+    - name: Get AOSP Clang
       run: |
         if [ ! -d clang ]; then
+          wget https://github.com/Impqxr/aosp_clang_ci/releases/download/13289611/clang-13289611-linux-x86.tar.xz
           mkdir clang
-          wget https://github.com/Impqxr/aosp_clang_ci/releases/download/13289611/clang-13289611-linux-x86.tar.xz -O clang.tar.xz
-          tar -xf clang.tar.xz --strip-components=1 -C clang
-        else
-          echo "Using cached AOSP Clang"
+          tar -xf clang-13289611-linux-x86.tar.xz --strip-components=1 -C clang
         fi
 
-    # ==============================
-    # Build Kernel
-    # ==============================
     - name: Build kernel
       run: |
         chmod +x build.sh
         ./build.sh
 
-    # ==============================
-    # Pack AnyKernel ZIP
-    # ==============================
     - name: Pack kernel zip
       run: |
         OUT=out/arch/arm64/boot
         AK=AnyKernel3
 
-        IMAGE=${OUT}/Image.gz
-        DTB=${OUT}/dtb.img
-        DTBO=${OUT}/dtbo.img
+        cp ${OUT}/Image.gz ${AK}/Image.gz
+        cp ${OUT}/dtb.img ${AK}/dtb.img
+        [ -f ${OUT}/dtbo.img ] && cp ${OUT}/dtbo.img ${AK}/dtbo.img
 
-        [ -f ${IMAGE} ] || { echo "❌ Image.gz missing"; exit 1; }
-        [ -f ${DTB} ]   || { echo "❌ dtb.img missing"; exit 1; }
-
-        cp ${IMAGE} ${AK}/Image.gz
-        cp ${DTB}   ${AK}/dtb.img
-        [ -f ${DTBO} ] && cp ${DTBO} ${AK}/dtbo.img
-
-        ZIP_NAME="${ZIP_NAME:-UranusKernel-${GITHUB_REF_NAME}}.zip"
+        ZIP_NAME="UranusKernel-${GITHUB_RUN_NUMBER}.zip"
         cd ${AK}
         zip -r9 ../${ZIP_NAME} *
         cd ..
 
-        echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
-
-    # ==============================
-    # Upload Artifact
-    # ==============================
-    - name: Upload kernel zip
+    - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: kernel-zip
         path: "*.zip"
-
-    # ==============================
-    # GitHub Release (TAG ONLY)
-    # ==============================
-    - name: Create GitHub Release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v2
-      with:
-        files: "*.zip"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
