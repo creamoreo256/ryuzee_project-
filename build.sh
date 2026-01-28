@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 set -e
 
-# timezone build
+# ================= TIME =================
 export TZ=Asia/Jakarta
 export SOURCE_DATE_EPOCH=$(date +%s)
 
-# build identity
+# ================= IDENTITY =================
 export KBUILD_BUILD_USER=ryuzee
 export KBUILD_BUILD_HOST=project
+export KBUILD_BUILD_VERSION=1
+export KBUILD_BUILD_TIMESTAMP="$(date '+%a %b %d %T %Z %Y')"
 
-# arch
+# ================= ARCH =================
 export ARCH=arm64
 export SUBARCH=arm64
 
@@ -18,23 +20,21 @@ OUT_DIR=${WORK_DIR}/out
 DEFCONFIG=surya_defconfig
 
 # ================= TOOLCHAIN =================
-
-# AOSP Clang
 export PATH=${WORK_DIR}/clang/bin:${PATH}
-
-# Cross compile 
 export CROSS_COMPILE=aarch64-linux-gnu-
 export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
-# ============================================
+# ================= LOCALVERSION =================
+export LOCALVERSION=" ⚜️"
 
+# ================= BUILD =================
 mkdir -p ${OUT_DIR}
 
 echo "==> Using ${DEFCONFIG}"
-make O=${OUT_DIR} ARCH=arm64 ${DEFCONFIG}
+make O=${OUT_DIR} ${DEFCONFIG}
 
 echo "==> Building kernel"
-make -j$(nproc) O=${OUT_DIR} ARCH=arm64 \
+make -j$(nproc) O=${OUT_DIR} \
   CC=clang \
   LD=ld.lld \
   AR=llvm-ar \
@@ -46,7 +46,6 @@ make -j$(nproc) O=${OUT_DIR} ARCH=arm64 \
   CROSS_COMPILE_ARM32=${CROSS_COMPILE_ARM32}
 
 # ================= OUTPUT =================
-
 BOOT_DIR=${OUT_DIR}/arch/arm64/boot
 
 [ -f ${BOOT_DIR}/Image.gz ] || { echo "❌ Image.gz missing"; exit 1; }
