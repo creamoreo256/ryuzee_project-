@@ -70,8 +70,8 @@ jobs:
     - name: Upload to Telegram
       if: success()
       run: |
-        chmod +x scripts/upload.sh
-        scripts/upload.sh \
+        chmod +x up.sh
+        up.sh \
           "${ZIP_NAME}" \
           "${{ secrets.TG_BOT_TOKEN }}" \
           "${{ secrets.TG_CHAT_ID }}"
