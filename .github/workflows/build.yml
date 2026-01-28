@@ -2,42 +2,54 @@ name: Build Kernel
 
 on:
   workflow_dispatch:
-  
+
 jobs:
   build:
     runs-on: ubuntu-22.04
 
     steps:
+    # ==============================
+    # Checkout
+    # ==============================
     - name: Checkout source
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
 
     # ==============================
-    # Set Timezone (Asia/Jakarta)
+    # Timezone (BUILD TIME ONLY)
     # ==============================
     - name: Set Timezone
       run: |
         sudo timedatectl set-timezone Asia/Jakarta
-        echo "BUILD_TIME=$(date '+%Y-%m-%d %H:%M:%S WIB')" >> $GITHUB_ENV
-        echo "BUILD_DATE=$(date '+%Y%m%d')" >> $GITHUB_ENV
+        echo "TZ=Asia/Jakarta" >> $GITHUB_ENV
 
+    # ==============================
+    # Install build deps (ARM32 FIX)
+    # ==============================
     - name: Install build deps
       run: |
         sudo apt update
         sudo apt install -y \
           bc bison build-essential ccache flex \
-          libssl-dev libelf-dev lld git wget unzip zip
+          libssl-dev libelf-dev lld git wget unzip zip \
+          gcc-arm-linux-gnueabi \
+          binutils-arm-linux-gnueabi
 
     # ==============================
-    # Cache Proton Clang
+    # Cache Proton Clang (PERSISTENT)
     # ==============================
     - name: Cache Proton Clang
       uses: actions/cache@v4
       with:
         path: clang
-        key: ${{ runner.os }}-proton-clang
+        key: proton-clang-${{ runner.os }}
+        restore-keys: |
+          proton-clang-
 
+    # ==============================
+    # Get Proton Clang
+    # ==============================
     - name: Get Clang
       run: |
         if [ ! -d clang ]; then
@@ -55,7 +67,7 @@ jobs:
         ./build.sh
 
     # ==============================
-    # Pack AnyKernel ZIP (VALIDATED)
+    # Pack AnyKernel ZIP
     # ==============================
     - name: Pack kernel zip
       run: |
@@ -66,7 +78,6 @@ jobs:
         DTB=${OUT}/dtb.img
         DTBO=${OUT}/dtbo.img
 
-        # HARD VALIDATION
         [ -f ${IMAGE} ] || { echo "❌ Image.gz missing"; exit 1; }
         [ -f ${DTB} ]   || { echo "❌ dtb.img missing"; exit 1; }
 
@@ -74,7 +85,7 @@ jobs:
         cp ${DTB}   ${AK}/dtb.img
         [ -f ${DTBO} ] && cp ${DTBO} ${AK}/dtbo.img
 
-        ZIP_NAME="${ZIP_NAME:-UranusKernel-${GITHUB_REF_NAME}-${BUILD_DATE}}.zip"
+        ZIP_NAME="${ZIP_NAME:-UranusKernel-${GITHUB_REF_NAME}}.zip"
         cd ${AK}
         zip -r9 ../${ZIP_NAME} *
         cd ..
