@@ -1,80 +1,94 @@
-#!/bin/bash
-SECONDS=0
+#!/usr/bin/env bash
 set -e
 
-# Set kernel path
-KERNEL_PATH="out/arch/arm64/boot"
+# ==============================
+# Timezone (BUILD TIME ONLY)
+# ==============================
+export TZ=Asia/Jakarta
+export SOURCE_DATE_EPOCH=$(date +%s)
 
-# Set kernel file
-OBJ="${KERNEL_PATH}/Image"
-GZIP="${KERNEL_PATH}/Image.gz"
+# ==============================
+# Kernel Version
+# ==============================
+KERNEL_NAME="UranusKernel"
+KERNEL_CODENAME="Uranus ⚜️"
+KERNEL_VERSION="$(date +%Y%m%d)"
+ZIP_NAME="${KERNEL_NAME}-${KERNEL_VERSION}"
 
-# Set dts file
-DTB="${KERNEL_PATH}/dtb.img"
-DTBO="${KERNEL_PATH}/dtbo.img"
+export KERNEL_NAME KERNEL_VERSION ZIP_NAME
 
-# Set date kernel
-DATE="$(TZ=Asia/Jakarta date +%Y%m%d%H%M)"
+[ -n "${GITHUB_ENV}" ] && echo "ZIP_NAME=${ZIP_NAME}" >> "${GITHUB_ENV}"
 
-# Set kernel name
-KERNEL_NAME="derivativeTK-${DATE}.zip"
+# ==============================
+# Build Identity
+# ==============================
+export KBUILD_BUILD_USER=ryuzee
+export KBUILD_BUILD_HOST=project
 
-function KERNEL_COMPILE() {
-	# Set environment variables
-	export USE_CCACHE=1
-	export KBUILD_BUILD_HOST=builder
-	export KBUILD_BUILD_USER=khayloaf
+# ==============================
+# Arch & Path
+# ==============================
+export ARCH=arm64
+export SUBARCH=arm64
 
-	# Create output directory and do a clean build
-	rm -rf out && mkdir -p out
+WORK_DIR=$(pwd)
+OUT_DIR=${WORK_DIR}/out
+DEFCONFIG=surya_defconfig
 
-	# Download clang if not present
-	if [[ ! -d clang ]]; then mkdir -p clang
-		wget https://github.com/Impqxr/aosp_clang_ci/releases/download/13289611/clang-13289611-linux-x86.tar.xz -O clang.tar.gz
-		tar -xf clang.tar.gz -C clang && if [ -d clang/clang-* ]; then mv clang/clang-*/* clang; fi && rm -rf clang.tar.gz
-	fi
+export PATH=${WORK_DIR}/clang/bin:${PATH}
+export LOCALVERSION="-Uranus"
 
-	# Add clang bin directory to PATH
-	export PATH="${PWD}/clang/bin:$PATH"
+# ==============================
+# Backup defconfig
+# ==============================
+BACKUP_DIR=${WORK_DIR}/defconfig_backup
+TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+mkdir -p ${BACKUP_DIR}
+cp arch/arm64/configs/${DEFCONFIG} \
+   ${BACKUP_DIR}/${DEFCONFIG}.${TIMESTAMP}.bak
 
-	# Make the config
-	make O=out ARCH=arm64 surya_defconfig
+# ==============================
+# Compile
+# ==============================
+mkdir -p ${OUT_DIR}
 
-	# Build the kernel with clang and log output
-	make -j$(nproc --all) O=out ARCH=arm64 CC=clang LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_COMPAT=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1 2>&1
-}
+echo "==> Using ${DEFCONFIG}"
+make O=${OUT_DIR} ARCH=arm64 ${DEFCONFIG}
 
-function KERNEL_RESULT() {
-	# Run compiler
-	KERNEL_COMPILE
+echo "==> Building kernel ${KERNEL_CODENAME}"
+make -j$(nproc) O=${OUT_DIR} ARCH=arm64 \
+    CC=clang \
+    LD=ld.lld \
+    AR=llvm-ar \
+    NM=llvm-nm \
+    OBJCOPY=llvm-objcopy \
+    OBJDUMP=llvm-objdump \
+    STRIP=llvm-strip \
+    CROSS_COMPILE=aarch64-linux-gnu- \
+    CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
-	# Check if build is successful
-	if [ ! -f "$OBJ" ] || [ ! -f "$GZIP" ] || [ ! -f "$DTB" ] || [ ! -f "$DTBO" ]; then
-		exit 1
-	fi
+# ==============================
+# VALIDASI OUTPUT
+# ==============================
+BOOT_DIR="${OUT_DIR}/arch/arm64/boot"
+IMAGE="${BOOT_DIR}/Image.gz"
+DTB_DIR="${BOOT_DIR}/dts/qcom"
+DTB_IMG="${BOOT_DIR}/dtb.img"
 
-	# Create anykernel
-	rm -rf anykernel
-	git clone https://github.com/kylieeXD/AK3-Surya.git -b T anykernel
+[ -f "${IMAGE}" ] || { echo "❌ Image.gz NOT FOUND"; exit 1; }
 
-	# Copying image
-	cp "$DTB" "anykernel/kernels/"
-	cp "$DTBO" "anykernel/kernels/"
-	cp "$GZIP" "anykernel/kernels/"
+# ==============================
+# Create dtb.img
+# ==============================
+echo "==> Creating dtb.img"
+if ls ${DTB_DIR}/*.dtb 1> /dev/null 2>&1; then
+    cat ${DTB_DIR}/*.dtb > ${DTB_IMG}
+else
+    echo "❌ No DTB files found in ${DTB_DIR}"
+    exit 1
+fi
 
-	# Created zip kernel
-	cd anykernel && zip -r9 "$1" *
+[ -f "${DTB_IMG}" ] || { echo "❌ dtb.img FAILED"; exit 1; }
 
-	# Upload kernel
-	curl -T "$1" -u :dc4f2d6d-ef86-4241-af44-44f311a0ecb9 https://pixeldrain.com/api/file/
-
-	# Back to kernel root
-	cd - >/dev/null
-}
-
-# Run all function
-rm -rf compile.log
-KERNEL_RESULT "$KERNEL_NAME" | tee -a compile.log
-
-# Done bang
-echo -e "Completed in $((SECONDS / 60)) minute(s) and $((SECONDS % 60)) second(s) !\n"
+echo "==> Build finished: ${ZIP_NAME}"
+ls -lh ${BOOT_DIR}
