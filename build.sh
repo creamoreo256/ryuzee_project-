@@ -58,9 +58,9 @@ make -j$(nproc) O=${OUT_DIR} ARCH=arm64 \
   OBJCOPY=llvm-objcopy \
   OBJDUMP=llvm-objdump \
   STRIP=llvm-strip \
-  CROSS_COMPILE=${CROSS_COMPILE} \
-  CROSS_COMPILE_ARM32=${CROSS_COMPILE_ARM32}
-
+  CROSS_COMPILE=aarch64-linux-gnu- \
+  CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+  
 # validate
 BOOT_DIR="${OUT_DIR}/arch/arm64/boot"
 IMAGE="${BOOT_DIR}/Image.gz"
