@@ -16,7 +16,6 @@ KERNEL_VERSION="$(date +%Y%m%d)"
 ZIP_NAME="${KERNEL_NAME}-${KERNEL_VERSION}"
 
 export KERNEL_NAME KERNEL_VERSION ZIP_NAME
-
 [ -n "${GITHUB_ENV}" ] && echo "ZIP_NAME=${ZIP_NAME}" >> "${GITHUB_ENV}"
 
 # ==============================
@@ -26,7 +25,7 @@ export KBUILD_BUILD_USER=ryuzee
 export KBUILD_BUILD_HOST=project
 
 # ==============================
-# Arch & Path
+# Arch & Toolchain
 # ==============================
 export ARCH=arm64
 export SUBARCH=arm64
@@ -35,7 +34,10 @@ WORK_DIR=$(pwd)
 OUT_DIR=${WORK_DIR}/out
 DEFCONFIG=surya_defconfig
 
-export PATH=${WORK_DIR}/clang/bin:${PATH}
+# 🔥 TOOLCHAIN FIX (INI PENTING)
+export PATH=${WORK_DIR}/clang/bin:/usr/bin:${PATH}
+export CROSS_COMPILE=aarch64-linux-gnu-
+export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 export LOCALVERSION="-Uranus"
 
 # ==============================
@@ -59,15 +61,14 @@ echo "==> Building kernel ${KERNEL_CODENAME}"
 make -j$(nproc) O=${OUT_DIR} ARCH=arm64 \
   CC=clang \
   LD=ld.lld \
-  LD32=arm-linux-gnueabi-ld.bfd \
   AR=llvm-ar \
   NM=llvm-nm \
   OBJCOPY=llvm-objcopy \
   OBJDUMP=llvm-objdump \
   STRIP=llvm-strip \
-  CROSS_COMPILE=aarch64-linux-gnu- \
-  CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-  
+  CROSS_COMPILE=${CROSS_COMPILE} \
+  CROSS_COMPILE_ARM32=${CROSS_COMPILE_ARM32}
+
 # ==============================
 # VALIDASI OUTPUT
 # ==============================
