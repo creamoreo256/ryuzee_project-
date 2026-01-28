@@ -57,16 +57,17 @@ make O=${OUT_DIR} ARCH=arm64 ${DEFCONFIG}
 
 echo "==> Building kernel ${KERNEL_CODENAME}"
 make -j$(nproc) O=${OUT_DIR} ARCH=arm64 \
-    CC=clang \
-    LD=ld.lld \
-    AR=llvm-ar \
-    NM=llvm-nm \
-    OBJCOPY=llvm-objcopy \
-    OBJDUMP=llvm-objdump \
-    STRIP=llvm-strip \
-    CROSS_COMPILE=aarch64-linux-gnu- \
-    CROSS_COMPILE_ARM32=arm-linux-gnueabi-
-
+  CC=clang \
+  LD=ld.lld \
+  LD32=arm-linux-gnueabi-ld.bfd \
+  AR=llvm-ar \
+  NM=llvm-nm \
+  OBJCOPY=llvm-objcopy \
+  OBJDUMP=llvm-objdump \
+  STRIP=llvm-strip \
+  CROSS_COMPILE=aarch64-linux-gnu- \
+  CROSS_COMPILE_ARM32=arm-linux-gnueabi-
+  
 # ==============================
 # VALIDASI OUTPUT
 # ==============================
