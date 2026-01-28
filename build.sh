@@ -34,7 +34,7 @@ WORK_DIR=$(pwd)
 OUT_DIR=${WORK_DIR}/out
 DEFCONFIG=surya_defconfig
 
-# 🔥 TOOLCHAIN FIX (INI PENTING)
+# TOOLCHAIN FIX
 export PATH=${WORK_DIR}/clang/bin:/usr/bin:${PATH}
 export CROSS_COMPILE=aarch64-linux-gnu-
 export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
