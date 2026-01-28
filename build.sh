@@ -22,7 +22,7 @@ DEFCONFIG=surya_defconfig
 # AOSP Clang
 export PATH=${WORK_DIR}/clang/bin:${PATH}
 
-# Cross compile (PAKAI YANG DARI APT)
+# Cross compile 
 export CROSS_COMPILE=aarch64-linux-gnu-
 export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
