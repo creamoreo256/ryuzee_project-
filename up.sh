@@ -8,19 +8,17 @@ CHAT_ID="$3"
 DATE=$(date "+%d %B %Y")
 TIME=$(date "+%H:%M WIB")
 
-CAPTION="🚀 UranusKernel Build Success
+CAPTION="📦 UranusKernel — Build Success ✅
 
-📱 Device   : surya
-📦 File     : ${ZIP_NAME}
-
-📅 Date     : ${DATE}
-⏰ Time     : ${TIME}
-
+📱 Device   : surya 
+📅 Date     : 29 January 2026
+⏰ Time     : 14:44 WIB
 🛠 Clang    : AOSP 13289611
 🤖 CI       : GitHub Actions
 👤 Builder  : ryuzee_project
 
-━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
 #UranusKernel #surya #kernel"
 
 curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendDocument" \
