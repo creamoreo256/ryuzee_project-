@@ -11,8 +11,8 @@ TIME=$(date "+%H:%M WIB")
 CAPTION="📦 UranusKernel — Build Success ✅
 
 📱 Device   : surya 
-📅 Date     : 29 January 2026
-⏰ Time     : 14:44 WIB
+📅 Date     : ${DATE}
+⏰ Time     : ${TIME}
 🛠 Clang    : AOSP 13289611
 🤖 CI       : GitHub Actions
 👤 Builder  : ryuzee_project
