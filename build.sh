@@ -22,17 +22,9 @@ DEFCONFIG=surya_defconfig
 # ================= CCACHE =================
 export USE_CCACHE=1
 export CCACHE_DIR=${WORK_DIR}/.ccache
-export CC="ccache clang"
-export CXX="ccache clang++"
 
 # ================= TOOLCHAIN =================
 export PATH=${WORK_DIR}/clang/bin:${PATH}
-export LD=ld.lld
-export AR=llvm-ar
-export NM=llvm-nm
-export OBJCOPY=llvm-objcopy
-export OBJDUMP=llvm-objdump
-export STRIP=llvm-strip
 export CROSS_COMPILE=aarch64-linux-gnu-
 export CROSS_COMPILE_ARM32=arm-linux-gnueabi-
 
@@ -46,7 +38,16 @@ echo "==> Using ${DEFCONFIG}"
 make O=${OUT_DIR} ${DEFCONFIG}
 
 echo "==> Building kernel"
-make -j$(nproc) O=${OUT_DIR}
+make -j$(nproc) O=${OUT_DIR} \
+  CC="ccache clang" \
+  LD=ld.lld \
+  AR=llvm-ar \
+  NM=llvm-nm \
+  OBJCOPY=llvm-objcopy \
+  OBJDUMP=llvm-objdump \
+  STRIP=llvm-strip \
+  CROSS_COMPILE=${CROSS_COMPILE} \
+  CROSS_COMPILE_ARM32=${CROSS_COMPILE_ARM32}
 
 # ================= OUTPUT =================
 BOOT_DIR=${OUT_DIR}/arch/arm64/boot
