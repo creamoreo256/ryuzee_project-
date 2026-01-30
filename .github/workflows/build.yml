@@ -8,16 +8,29 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+    # ==============================
+    # Checkout
+    # ==============================
     - name: Checkout source
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0
+        fetch-depth: 1  
 
+    - name: Optimize git
+      run: |
+        git config --global gc.auto 0
+
+    # ==============================
+    # Timezone
+    # ==============================
     - name: Set Timezone
       run: |
         sudo timedatectl set-timezone Asia/Jakarta
         echo "TZ=Asia/Jakarta" >> $GITHUB_ENV
 
+    # ==============================
+    # Dependencies
+    # ==============================
     - name: Install build deps
       run: |
         sudo apt update
@@ -29,12 +42,29 @@ jobs:
           binutils-aarch64-linux-gnu \
           binutils-arm-linux-gnueabi
 
+    # ==============================
+    # Cache ccache (BUILD ACCELERATOR)
+    # ==============================
+    - name: Cache ccache
+      uses: actions/cache@v4
+      with:
+        path: .ccache
+        key: ccache-${{ runner.os }}-${{ github.sha }}
+        restore-keys: |
+          ccache-${{ runner.os }}-
+
+    # ==============================
+    # Cache AOSP Clang
+    # ==============================
     - name: Cache AOSP Clang
       uses: actions/cache@v4
       with:
         path: clang
         key: aosp-clang-13289611-${{ runner.os }}
 
+    # ==============================
+    # Get AOSP Clang
+    # ==============================
     - name: Get AOSP Clang
       run: |
         if [ ! -d clang ]; then
@@ -43,11 +73,19 @@ jobs:
           tar -xf clang-13289611-linux-x86.tar.xz --strip-components=1 -C clang
         fi
 
+    # ==============================
+    # Build Kernel
+    # ==============================
     - name: Build kernel
       run: |
+        export CCACHE_DIR=$PWD/.ccache
+        export CC="ccache clang"
         chmod +x build.sh
         ./build.sh
 
+    # ==============================
+    # Pack Kernel ZIP
+    # ==============================
     - name: Pack kernel zip
       run: |
         OUT=out/arch/arm64/boot
@@ -67,6 +105,9 @@ jobs:
 
         echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
 
+    # ==============================
+    # Upload to Telegram
+    # ==============================
     - name: Upload to Telegram
       if: success()
       run: |
@@ -76,6 +117,9 @@ jobs:
           "${{ secrets.TG_BOT_TOKEN }}" \
           "${{ secrets.TG_CHAT_ID }}"
 
+    # ==============================
+    # Upload Artifact
+    # ==============================
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
