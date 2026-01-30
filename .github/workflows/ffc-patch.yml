@@ -1,0 +1,66 @@
+name: Force Fast Charge Patch
+
+on:
+  workflow_dispatch:
+
+jobs:
+  apply-patch:
+    runs-on: ubuntu-22.04
+
+    steps:
+    # ==============================
+    # Checkout kernel source
+    # ==============================
+    - name: Checkout kernel
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    # ==============================
+    # Verify patch exists
+    # ==============================
+    - name: Verify patch file
+      run: |
+        if [ ! -f patches/ffc.patch ]; then
+          echo "❌ patches/ffc.patch NOT FOUND"
+          exit 1
+        fi
+
+    # ==============================
+    # Dry-run patch (SAFETY CHECK)
+    # ==============================
+    - name: Check patch (dry-run)
+      run: |
+        git apply --check patches/ffc.patch || {
+          echo "❌ Patch cannot be applied cleanly"
+          exit 1
+        }
+
+    # ==============================
+    # Apply patch
+    # ==============================
+    - name: Apply patch
+      run: |
+        git apply patches/ffc.patch
+        echo "✅ Patch applied successfully"
+
+    # ==============================
+    # Commit changes
+    # ==============================
+    - name: Commit patch
+      run: |
+        git config user.name "github-actions"
+        git config user.email "actions@github.com"
+
+        git status
+        git commit -am "power: force fast charging (surya)" || {
+          echo "❌ Nothing committed"
+          exit 1
+        }
+
+    # ==============================
+    # Push result
+    # ==============================
+    - name: Push changes
+      run: |
+        git push
