@@ -5,17 +5,16 @@ ZIP_NAME="$1"
 BOT_TOKEN="$2"
 CHAT_ID="$3"
 
-DATE=$(date "+%d %B %Y")
+DATE=$(date "+%d/%m/%Y")
 TIME=$(date "+%H:%M WIB")
 
 CAPTION=" UranusKernel — Build Success ✅
 
-📱 Device      : surya
-🤖 Android     : 13 - 16
-📅 Date        : ${DATE}
-⏰ Time        : ${TIME}
-🛠 Clang       : 21.0.0
-
+📱 Device          : surya
+🤖 Android version : 13-16
+📅 Build Date      : ${DATE}
+⏰ Build Time      : ${TIME}
+🛠 Toolchain       : Clang 21.0.0
 
 #UranusKernel #Uranus #surya #kernel"
 
