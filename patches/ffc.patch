@@ -1,0 +1,123 @@
+From 9c3b7e1b8d8f4f7caa000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ryuzee <ryuzee@project>
+Date: Fri, 30 Jan 2026 19:30:00 +0700
+Subject: [PATCH] power: force fast charging (QC3/FC2) for surya
+
+- Add force fast charge kernel toggle
+- Bypass QC authentication failure
+- Lock HVDCP3 type to prevent flapping
+- Prevent charge pump exit during FC
+- Keep thermal protection intact
+- Disabled by default (safe)
+
+Signed-off-by: ryuzee <ryuzee@project>
+---
+
+ drivers/power/supply/qcom/smb-lib.c | 46 ++++++++++++++++++++++++++++++
+ drivers/power/supply/bq2597x.c      | 10 +++++++
+ drivers/power/supply/qcom/qpnp-smb5.c | 12 ++++++++
+ 3 files changed, 68 insertions(+)
+
+diff --git a/drivers/power/supply/qcom/smb-lib.c b/drivers/power/supply/qcom/smb-lib.c
+index 1234567..abcdef0 100644
+--- a/drivers/power/supply/qcom/smb-lib.c
++++ b/drivers/power/supply/qcom/smb-lib.c
+@@ -45,6 +45,8 @@
+ #include <linux/thermal.h>
+ #include <linux/power_supply.h>
+
++static bool force_fast_charge;
++
+ static ssize_t force_fast_charge_show(struct device *dev,
+        struct device_attribute *attr, char *buf)
+ {
+@@ -52,6 +54,27 @@ static ssize_t force_fast_charge_show(struct device *dev,
+ }
+
+ static ssize_t force_fast_charge_store(struct device *dev,
++        struct device_attribute *attr, const char *buf, size_t count)
++{
++    int val;
++
++    if (kstrtoint(buf, 10, &val))
++        return -EINVAL;
++
++    force_fast_charge = !!val;
++    pr_info("ForceFastCharge: %s\n",
++        force_fast_charge ? "ENABLED" : "DISABLED");
++
++    return count;
++}
++
++static DEVICE_ATTR_RW(force_fast_charge);
++
++static int smblib_create_sysfs_entries(struct smb_charger *chg)
++{
++    device_create_file(chg->dev, &dev_attr_force_fast_charge);
++    return 0;
++}
++
++/* FCC / ICL override */
+ static int smblib_set_charge_param(struct smb_charger *chg,
+        struct smb_chg_param *param, int val)
+ {
+@@ -2100,6 +2123,12 @@ static int smblib_set_charge_param(struct smb_charger *chg,
+        if (force_fast_charge) {
+            chg->fcc_ua = min(chg->batt_profile_fcc_ua, 5000000);
+            chg->usb_icl_ua = 3000000;
++           chg->dc_icl_ua  = 3000000;
+        }
++
+        return rc;
+ }
+
+@@ -3150,6 +3180,12 @@ static int smblib_hvdcp3_authenticate(struct smb_charger *chg)
+        rc = smblib_hvdcp3_authenticate(chg);
++
++       if (rc < 0 && force_fast_charge) {
++           pr_warn("ForceFastCharge: bypass QC auth failure rc=%d\n", rc);
++           rc = 0;
++       }
+        return rc;
+ }
+
+diff --git a/drivers/power/supply/bq2597x.c b/drivers/power/supply/bq2597x.c
+index 7654321..fedcba9 100644
+--- a/drivers/power/supply/bq2597x.c
++++ b/drivers/power/supply/bq2597x.c
+@@ -32,6 +32,8 @@
+ #include <linux/power_supply.h>
+ #include <linux/regmap.h>
+
++extern bool force_fast_charge;
++
+ static int bq2597x_set_bus_protection(struct bq2597x *bq, int hvdcp3_type)
+ {
++    if (force_fast_charge)
++        hvdcp3_type = 1; /* Force QC3 */
++
+     return regmap_write(bq->regmap, BQ2597X_BUS_PROT, hvdcp3_type);
+ }
+
+diff --git a/drivers/power/supply/qcom/qpnp-smb5.c b/drivers/power/supply/qcom/qpnp-smb5.c
+index aaaaaaa..bbbbbbb 100644
+--- a/drivers/power/supply/qcom/qpnp-smb5.c
++++ b/drivers/power/supply/qcom/qpnp-smb5.c
+@@ -4100,6 +4100,18 @@ static int cp_statemachine(struct smb_charger *chg)
+ {
+     switch (chg->cp_state) {
+     case CP_STATE_EXIT:
++        if (force_fast_charge) {
++            pr_info("ForceFastCharge: prevent CP exit\n");
++            return CP_STATE_TUNE;
++        }
+         return CP_STATE_EXIT;
++
+     default:
+         break;
+     }
++
+     return chg->cp_state;
+ }
+--
+2.39.2
