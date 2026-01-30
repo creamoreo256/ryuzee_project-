@@ -11,12 +11,11 @@ TIME=$(date "+%H:%M WIB")
 CAPTION=" UranusKernel — Build Success ✅
 
 📱 Device      : surya
-🤖 Android     : 13-16
+🤖 Android     : 13 - 16
 📅 Date        : ${DATE}
 ⏰ Time        : ${TIME}
-🛠 Clang       : AOSP 13289611
-⚙️ CI          : GitHub Actions
-👤 Builder     : ryuzee_project
+🛠 Clang       : 21.0.0
+
 
 #UranusKernel #Uranus #surya #kernel"
 
